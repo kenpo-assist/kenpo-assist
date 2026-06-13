@@ -2,9 +2,11 @@ import os
 import shutil
 import sqlite3
 import subprocess
+import sys
 import tempfile
 from datetime import datetime
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -14,7 +16,27 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-DB_PATH = "kenpo_support.db"
+IS_FROZEN = getattr(sys, "frozen", False)
+
+
+def resource_path(rel: str) -> str:
+    """同梱された読み取り専用リソース（staticファイル等）の絶対パスを返す。
+    PyInstaller でexe化すると一時展開先 sys._MEIPASS に配置される。"""
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return str(base / rel)
+
+
+def data_dir() -> Path:
+    """書き込み可能なデータ保存先（DB等）。exe化時はユーザーごとのホーム配下に置く。"""
+    if IS_FROZEN:
+        base = Path.home() / ".kenpo-support"
+    else:
+        base = Path(__file__).resolve().parent
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+DB_PATH = str(data_dir() / "kenpo_support.db")
 
 
 def init_db():
@@ -79,7 +101,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=resource_path("static")), name="static")
 
 
 class InquiryCreate(BaseModel):
@@ -127,7 +149,7 @@ class RefineRequest(BaseModel):
 
 @app.get("/")
 def index():
-    return FileResponse("static/index.html")
+    return FileResponse(resource_path("static/index.html"))
 
 
 @app.get("/api/settings")

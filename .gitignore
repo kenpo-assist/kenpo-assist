@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.db
 .env
+
+# PyInstaller ビルド成果物
+build/
+dist/

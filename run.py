@@ -4,7 +4,8 @@
 ローカルでサーバーを起動し、既定ブラウザで画面を自動的に開きます。
 非エンジニアの利用者がダブルクリック相当で起動できることを想定しています。
 
-    python run.py
+    python run.py            # ソースから起動
+    ./kenpo-support          # exe化した配布物から起動
 
 環境変数 PORT で待受ポートを変更できます（既定: 8765）。
 """
@@ -14,6 +15,9 @@ import webbrowser
 
 import uvicorn
 
+# exe化時もimport文字列ではなくappオブジェクトを直接渡すため、ここでimportする
+from main import app
+
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", "8765"))
 
@@ -22,9 +26,13 @@ def _open_browser():
     webbrowser.open(f"http://{HOST}:{PORT}/")
 
 
-if __name__ == "__main__":
+def main():
     # サーバー起動直後にブラウザを開く（起動待ちのため少し遅延）
     threading.Timer(1.5, _open_browser).start()
     print(f"健保問い合わせサポートシステムを起動します → http://{HOST}:{PORT}/")
     print("終了するには Ctrl+C を押してください。")
-    uvicorn.run("main:app", host=HOST, port=PORT, log_level="info")
+    uvicorn.run(app, host=HOST, port=PORT, log_level="info")
+
+
+if __name__ == "__main__":
+    main()

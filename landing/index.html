@@ -396,7 +396,7 @@
     <h2 class="sec">お問い合わせ・ご購入のご相談</h2>
     <p class="sec-sub">導入のご相談、お見積り、デモのご希望などお気軽にどうぞ。</p>
     <!-- TODO: action を送信先（Formspree等のフォームエンドポイント）に差し替えてください -->
-    <form class="cf" id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+    <form class="cf" id="contact-form" action="https://formspree.io/f/mykabnlo" method="POST">
       <input type="hidden" name="_subject" value="【ケンポアシスト】HPからのお問い合わせ">
       <div class="row2">
         <div>
@@ -442,10 +442,11 @@
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  // TODO: 配布バイナリのダウンロードURLを設定してください（未設定なら案内を表示）
+  // GitHub Releases の「latest」から配布バイナリをダウンロード
+  // （リリースを1度作成すると有効になります。タグ push で自動公開）
   const DOWNLOAD_URLS = {
-    win: "",   // 例: "/downloads/KenpoAssist.exe"
-    mac: ""    // 例: "/downloads/KenpoAssist"
+    win: "https://github.com/Evolved-Skynet/kenpo-assist/releases/latest/download/KenpoAssist-windows.exe",
+    mac: "https://github.com/Evolved-Skynet/kenpo-assist/releases/latest/download/KenpoAssist-macos"
   };
   function dlClick(e) {
     const os = e.currentTarget.getAttribute('data-os');

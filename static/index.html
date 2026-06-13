@@ -22,6 +22,36 @@
     border-radius: 6px; padding: 4px 8px; font-size: 13px; cursor: pointer;
   }
   header #provider-select option { color: #222; }
+  header .header-setup-btn {
+    background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer;
+  }
+  header .header-setup-btn:hover { background: rgba(255,255,255,0.28); }
+
+  /* ── 初期設定ウィザード ── */
+  .setup-modal { max-width: 720px; height: auto; max-height: 90vh; }
+  .setup-intro { font-size: 13px; color: #555; line-height: 1.7; margin-bottom: 14px; }
+  .setup-env {
+    background: #f5f8fc; border: 1px solid #e1ebf7; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 16px; font-size: 13px;
+  }
+  .setup-card {
+    border: 1px solid #e1ebf7; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .setup-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .setup-card-head .name { font-weight: 600; font-size: 15px; }
+  .setup-badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+  .setup-badge.ok { background: #e3f5e9; color: #1a7f43; }
+  .setup-badge.ng { background: #fdecec; color: #c0392b; }
+  .setup-badge.unknown { background: #eee; color: #777; }
+  .setup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .setup-actions .btn { font-size: 13px; padding: 6px 12px; }
+  .setup-msg { font-size: 12px; color: #555; margin-top: 8px; white-space: pre-wrap; }
+  .setup-log {
+    margin-top: 8px; background: #1e2530; color: #d6e2f0; font-size: 11px;
+    border-radius: 6px; padding: 8px 10px; max-height: 150px; overflow: auto;
+    white-space: pre-wrap; display: none; font-family: monospace;
+  }
 
   /* ── PC ナビ（タブ） ── */
   nav#pc-nav {
@@ -387,6 +417,7 @@
   <div class="header-ai">
     <label for="provider-select">AI</label>
     <select id="provider-select" onchange="changeProvider(this.value)"></select>
+    <button id="btn-setup" class="header-setup-btn" onclick="openSetup()">⚙ 初期設定</button>
   </div>
 </header>
 
@@ -542,6 +573,25 @@
 
 </div>
 
+<!-- 初期設定ウィザード -->
+<div class="modal-overlay" id="setup-overlay" onclick="if(event.target===this)closeSetup()">
+  <div class="modal setup-modal">
+    <div class="modal-header">
+      <h2>⚙ 初期設定（AIの準備）</h2>
+      <button class="btn btn-secondary btn-sm" onclick="closeSetup()">閉じる</button>
+    </div>
+    <div style="overflow:auto">
+      <div class="setup-intro">
+        利用するAIを使えるようにする初回設定です。<b>① 導入</b>（クリックで自動）→
+        <b>② ログイン</b>（ボタンで開く画面でご自身のアカウント認証）→
+        <b>③ 接続確認</b> の順で進めてください。使うAIだけでOKです。
+      </div>
+      <div class="setup-env" id="setup-env">環境を確認中...</div>
+      <div id="setup-cards"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 詳細モーダル -->
 <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -630,6 +680,12 @@ async function initSettings() {
       if (p.id === currentProvider) opt.selected = true;
       sel.appendChild(opt);
     });
+    // 利用可能なAIが1つも無ければ、初回案内として初期設定を開く
+    const anyAvailable = data.providers.some(p => p.available);
+    if (!anyAvailable && !sessionStorage.getItem('setupPrompted')) {
+      sessionStorage.setItem('setupPrompted', '1');
+      openSetup();
+    }
   } catch(e) {
     sel.innerHTML = '<option>読込失敗</option>';
   }
@@ -1019,6 +1075,125 @@ async function deleteInquiry() {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('show');
   currentId = null;
+}
+
+// ───────────── 初期設定ウィザード ─────────────
+let setupState = null;
+
+function openSetup() {
+  document.getElementById('setup-overlay').classList.add('show');
+  loadSetupStatus();
+}
+function closeSetup() {
+  document.getElementById('setup-overlay').classList.remove('show');
+  // 設定変更が反映されるよう、AIセレクタを更新
+  initSettings();
+}
+
+async function loadSetupStatus() {
+  const env = document.getElementById('setup-env');
+  const cards = document.getElementById('setup-cards');
+  env.textContent = '環境を確認中...';
+  cards.innerHTML = '';
+  try {
+    setupState = await (await fetch('/api/setup/status')).json();
+  } catch(e) {
+    env.innerHTML = '<span style="color:#c0392b">状態の取得に失敗しました。</span>';
+    return;
+  }
+  // Node.js の状態
+  if (setupState.node.installed) {
+    env.innerHTML = `✅ Node.js 導入済み（${setupState.node.version}）`;
+  } else {
+    env.innerHTML = '⚠️ <b>Node.js が未導入です。</b>AIの導入には Node.js が必要です。'
+      + '<a href="https://nodejs.org/" target="_blank">nodejs.org</a> の「LTS」版をインストール後、'
+      + 'このシステムを再起動してください。';
+  }
+  // 各プロバイダのカード
+  setupState.providers.forEach(p => cards.appendChild(buildSetupCard(p)));
+}
+
+function buildSetupCard(p) {
+  const card = document.createElement('div');
+  card.className = 'setup-card';
+  const badge = p.installed
+    ? '<span class="setup-badge ok">導入済み</span>'
+    : '<span class="setup-badge ng">未導入</span>';
+  const npmReady = setupState.npm.installed;
+  card.innerHTML = `
+    <div class="setup-card-head">
+      <span class="name">${p.label}</span>${badge}
+    </div>
+    <div class="setup-actions">
+      <button class="btn btn-primary" data-act="install" ${p.installed ? 'disabled' : (npmReady ? '' : 'disabled')}>① 導入する</button>
+      <button class="btn btn-secondary" data-act="login" ${p.installed ? '' : 'disabled'}>② ログイン</button>
+      <button class="btn btn-secondary" data-act="verify" ${p.installed ? '' : 'disabled'}>③ 接続確認</button>
+    </div>
+    <div class="setup-msg" data-role="msg"></div>
+    <div class="setup-log" data-role="log"></div>
+  `;
+  const msg = card.querySelector('[data-role="msg"]');
+  const log = card.querySelector('[data-role="log"]');
+  card.querySelector('[data-act="install"]').onclick = (e) => installProvider(p, e.target, msg, log);
+  card.querySelector('[data-act="login"]').onclick   = (e) => loginProvider(p, e.target, msg);
+  card.querySelector('[data-act="verify"]').onclick  = (e) => verifyProvider(p, e.target, msg);
+  if (!p.installed && !npmReady) msg.textContent = '※ 先に Node.js を導入してください。';
+  return card;
+}
+
+async function installProvider(p, btn, msg, log) {
+  btn.disabled = true; const orig = btn.textContent; btn.innerHTML = '<span class="spinner"></span>導入中...';
+  msg.textContent = '導入しています。数分かかる場合があります。そのままお待ちください...';
+  log.style.display = 'none'; log.textContent = '';
+  try {
+    const res = await fetch('/api/setup/install', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ provider: p.id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '導入に失敗しました');
+    msg.textContent = data.installed ? '✅ 導入が完了しました。続けて「② ログイン」へ進んでください。' : '導入処理は完了しましたが確認できませんでした。';
+    if (data.log) { log.style.display = 'block'; log.textContent = data.log; }
+    loadSetupStatus();
+  } catch(e) {
+    msg.textContent = '❌ ' + e.message;
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function loginProvider(p, btn, msg) {
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = '起動中...';
+  try {
+    const res = await fetch('/api/setup/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ provider: p.id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'ログインの起動に失敗しました');
+    msg.textContent = data.message;
+  } catch(e) {
+    msg.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function verifyProvider(p, btn, msg) {
+  btn.disabled = true; const orig = btn.textContent; btn.innerHTML = '<span class="spinner"></span>確認中...';
+  try {
+    const res = await fetch('/api/setup/verify', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ provider: p.id })
+    });
+    const data = await res.json();
+    msg.textContent = data.logged_in
+      ? `✅ ${p.label} に接続できました。このAIを利用できます。`
+      : '❌ まだ接続できません。' + (data.detail ? '（' + data.detail + '）' : '') + ' 「② ログイン」を完了してから再度お試しください。';
+  } catch(e) {
+    msg.textContent = '❌ 確認に失敗しました。';
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
 }
 
 // 起動時の初期化

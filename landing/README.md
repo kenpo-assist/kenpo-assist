@@ -9,7 +9,7 @@
    `<div class="price-amt">` を編集。
 2. **問い合わせフォームの送信先（Formspree）** — 問い合わせが Gmail に届くようにする設定。
    - 手順:
-     1. [Formspree](https://formspree.io/) に**受信したいGmail（noreply@evolved-skynet）で無料登録**
+     1. [Formspree](https://formspree.io/) に**問い合わせを受信したいメールアドレスで無料登録**
      2. 「New Form」でフォームを作成（受信先メールに上記Gmailを指定／確認メールを承認）
      3. 発行される **Form ID**（例: `xyzabcd`）を控える
      4. `index.html` の `<form ... action="https://formspree.io/f/YOUR_FORM_ID">` の

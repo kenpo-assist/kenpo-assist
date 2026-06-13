@@ -345,9 +345,8 @@
     <p class="sec-sub">買い切り・席単位ライセンス。月額費用はかかりません。まずは<a href="#trial">14日間の無料お試し</a>からどうぞ。</p>
     <div class="price-card">
       <span class="price-badge">買い切りライセンス</span>
-      <!-- TODO: 価格を確定後にここを差し替えてください -->
-      <div class="price-amt"><small>¥</small>XX,XXX</div>
-      <div class="price-unit">（税込）／ 1席（1台）あたり</div>
+      <div class="price-amt"><small>¥</small>1,000</div>
+      <div class="price-unit">（税込）／ 1席（1台）あたり・買い切り</div>
       <ul class="price-list">
         <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>すべての機能をご利用いただけます</li>
         <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>月額・追加課金なしの買い切り</li>
@@ -398,6 +397,7 @@
     <p class="sec-sub">導入のご相談、お見積り、デモのご希望などお気軽にどうぞ。</p>
     <!-- TODO: action を送信先（Formspree等のフォームエンドポイント）に差し替えてください -->
     <form class="cf" id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <input type="hidden" name="_subject" value="【ケンポアシスト】HPからのお問い合わせ">
       <div class="row2">
         <div>
           <label>組織名 / 健保組合名<span class="req">必須</span></label>

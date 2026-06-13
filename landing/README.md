@@ -5,11 +5,18 @@
 
 ## 公開前に差し替える3か所（プレースホルダ）
 
-1. **価格** — `index.html` 内の `<!-- TODO: 価格を確定後に... -->` の直後
-   `<div class="price-amt"><small>¥</small>XX,XXX</div>` を実際の金額に。
-2. **問い合わせフォームの送信先** — `<form ... action="https://formspree.io/f/YOUR_FORM_ID">`
-   - 例: [Formspree](https://formspree.io/) や [Getform](https://getform.io/) で無料のフォームエンドポイントを取得し、`action` に貼る。
-   - JSON応答（`Accept: application/json`）に対応済み。エンドポイント未設定のままだと送信時に注意メッセージが出ます。
+1. **価格** — 設定済み（¥1,000・税込・1席買い切り）。変更する場合は `index.html` の
+   `<div class="price-amt">` を編集。
+2. **問い合わせフォームの送信先（Formspree）** — 問い合わせが Gmail に届くようにする設定。
+   - 手順:
+     1. [Formspree](https://formspree.io/) に**受信したいGmail（noreply@evolved-skynet）で無料登録**
+     2. 「New Form」でフォームを作成（受信先メールに上記Gmailを指定／確認メールを承認）
+     3. 発行される **Form ID**（例: `xyzabcd`）を控える
+     4. `index.html` の `<form ... action="https://formspree.io/f/YOUR_FORM_ID">` の
+        `YOUR_FORM_ID` を発行されたIDに置き換える
+   - これで「HPで送信 → あなたのGmailに自動でメール到着」になります。
+   - **Gmailアドレスは公開ページに出ません**（HPに入るのはForm IDのみ。受信先はFormspree管理画面側で管理）。
+   - JSON応答対応済み・件名は「【ケンポアシスト】HPからのお問い合わせ」。未設定のままだと送信時に注意メッセージが出ます。
 3. **お試し版ダウンロードURL** — `<script>` 内の `DOWNLOAD_URLS`
    ```js
    const DOWNLOAD_URLS = { win: "", mac: "" };

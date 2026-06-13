@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>健保問い合わせサポート</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f4f6f9; color: #333; }
+
+  /* ── ヘッダー ── */
+  header {
+    background: #1a5fa8; color: white; padding: 14px 24px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header .header-ai { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  header .header-ai label { font-size: 12px; opacity: 0.85; }
+  header #provider-select {
+    background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 6px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+  }
+  header #provider-select option { color: #222; }
+
+  /* ── PC ナビ（タブ） ── */
+  nav#pc-nav {
+    background: white; border-bottom: 1px solid #e0e0e0;
+    display: flex; padding: 0 24px; gap: 4px;
+  }
+  nav#pc-nav button {
+    background: none; border: none; padding: 12px 16px;
+    cursor: pointer; font-size: 14px; color: #555;
+    border-bottom: 3px solid transparent;
+  }
+  nav#pc-nav button.active { color: #1a5fa8; border-bottom-color: #1a5fa8; font-weight: 600; }
+
+  /* ── スマホ ボトムナビ ── */
+  nav#sp-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: white; border-top: 1px solid #ddd;
+    height: 60px;
+  }
+  nav#sp-nav .sp-nav-inner {
+    display: flex; height: 100%;
+  }
+  nav#sp-nav button {
+    flex: 1; background: none; border: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; font-size: 11px; color: #888; cursor: pointer;
+    padding: 4px 0;
+  }
+  nav#sp-nav button svg { width: 22px; height: 22px; }
+  nav#sp-nav button.active { color: #1a5fa8; }
+  nav#sp-nav button.active svg { stroke: #1a5fa8; }
+  nav#sp-nav button svg { stroke: #aaa; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── レイアウト ── */
+  .container { max-width: 1280px; margin: 20px auto; padding: 0 20px; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .col-sticky { position: sticky; top: 16px; }
+
+  /* ── カード ── */
+  .card {
+    background: white; border-radius: 8px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 15px; font-weight: 600; margin-bottom: 14px;
+    color: #1a5fa8; padding-bottom: 10px; border-bottom: 1px solid #e8f0fb;
+  }
+  .card-right-placeholder {
+    background: #f8fbff; border: 2px dashed #c8ddf5; border-radius: 8px;
+    padding: 40px 20px; text-align: center; color: #aaa; font-size: 14px;
+  }
+
+  /* ── フォーム ── */
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; color: #555; }
+  select, input[type=text], textarea {
+    width: 100%; padding: 8px 12px; border: 1px solid #d0d0d0;
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  textarea { resize: vertical; }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: #1a5fa8;
+    box-shadow: 0 0 0 3px rgba(26,95,168,0.1);
+  }
+  .form-row { margin-bottom: 12px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── ボタン ── */
+  .btn {
+    padding: 8px 18px; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary { background: #1a5fa8; color: white; }
+  .btn-primary:hover { background: #154d8c; }
+  .btn-primary:disabled { background: #a0b8d8; cursor: not-allowed; }
+  .btn-secondary { background: #f0f0f0; color: #333; }
+  .btn-secondary:hover { background: #e0e0e0; }
+  .btn-success { background: #28a745; color: white; }
+  .btn-success:hover { background: #218838; }
+  .btn-sm { font-size: 12px; padding: 5px 10px; }
+  .btn-danger { background: #dc3545; color: white; }
+
+  /* ── スピナー ── */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── チャット ── */
+  .chat-box { border: 1px solid #d0e8ff; border-radius: 8px; overflow: hidden; }
+  .chat-messages {
+    padding: 12px; background: #f8fbff;
+    height: 260px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .chat-bubble {
+    max-width: 88%; padding: 9px 13px; border-radius: 12px;
+    font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+  }
+  .chat-bubble.user {
+    background: #1a5fa8; color: white;
+    align-self: flex-end; border-bottom-right-radius: 3px;
+  }
+  .chat-bubble.assistant {
+    background: white; border: 1px solid #d0e0f0;
+    align-self: flex-start; border-bottom-left-radius: 3px;
+  }
+  .apply-btn {
+    display: inline-block; margin-top: 6px; padding: 3px 9px;
+    background: #e8f4ff; border: 1px solid #1a5fa8; color: #1a5fa8;
+    border-radius: 4px; font-size: 11px; cursor: pointer;
+  }
+  .apply-btn:hover { background: #d0eaff; }
+  .chat-hint { font-size: 12px; color: #999; margin-bottom: 8px; }
+  .chat-input-area {
+    display: flex; gap: 8px; padding: 10px;
+    background: white; border-top: 1px solid #e0e0e0;
+  }
+  .chat-input-area textarea {
+    flex: 1; resize: none; padding: 7px 10px;
+    border: 1px solid #d0d0d0; border-radius: 6px;
+    font-size: 13px; font-family: inherit;
+  }
+
+  /* ── プレビューボックス ── */
+  .preview-box {
+    background: #f8f9fa; border-radius: 6px; padding: 10px 12px;
+    font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+    max-height: 180px; overflow-y: auto; border: 1px solid #e8e8e8;
+  }
+  .preview-box.blue { background: #f0f7ff; border-color: #b8d4f0; }
+
+  /* ── 参考文献ボックス ── */
+  .references-box {
+    background: #fffbf0; border: 1px solid #e8d88a; border-radius: 6px;
+    padding: 10px 14px; font-size: 12px; line-height: 1.7;
+    white-space: pre-wrap; color: #5a4a10;
+  }
+  .references-label {
+    font-size: 12px; font-weight: 600; color: #8a6d00;
+    margin-bottom: 5px; display: flex; align-items: center; gap: 5px;
+  }
+  .references-label svg { flex-shrink: 0; }
+
+  /* ── 履歴テーブル（PC） ── */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select { width: auto; flex: 1; min-width: 150px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: #f8f9fa; text-align: left; padding: 9px 12px; font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  tr:hover td { background: #fafbff; }
+  .sp-card-list { display: none; }
+
+  /* ── バッジ ── */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+  .badge-未対応 { background: #fff3cd; color: #856404; }
+  .badge-対応中 { background: #cce5ff; color: #004085; }
+  .badge-完了   { background: #d4edda; color: #155724; }
+
+  /* ── モーダル（PC） ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white; border-radius: 10px; padding: 20px 24px;
+    width: 92vw; max-width: 1100px;
+    height: 92vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    flex-shrink: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #e8f0fb;
+  }
+  .modal-header h2 { font-size: 16px; color: #1a5fa8; }
+  .modal-body-scroll {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .modal-body-scroll > .two-col {
+    flex: 1; min-height: 0; align-items: stretch;
+  }
+  .modal-col {
+    display: flex; flex-direction: column; min-height: 0; gap: 12px;
+  }
+  .modal-col .form-row { display: flex; flex-direction: column; min-height: 0; margin: 0; }
+  .modal-col .form-row.grow { flex: 1; min-height: 0; }
+  .modal-col .form-row.grow textarea,
+  .modal-col .form-row.grow .preview-box,
+  .modal-col .form-row.grow .chat-box { flex: 1; min-height: 0; }
+  .modal-col .form-row.grow .chat-box { display: flex; flex-direction: column; }
+  .modal-col .form-row.grow .chat-box .chat-messages { flex: 1; height: auto; min-height: 0; }
+  .modal-col textarea { resize: none; }
+  .modal-col .preview-box { overflow-y: auto; max-height: none; }
+  .modal-col .section-label { flex-shrink: 0; }
+  .modal-footer {
+    flex-shrink: 0;
+    display: flex; justify-content: flex-end; gap: 10px;
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid #eee;
+  }
+
+  .alert { padding: 9px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 14px; }
+  .alert-success { background: #d4edda; color: #155724; }
+  .alert-error { background: #f8d7da; color: #721c24; }
+  .page-hidden { display: none; }
+
+  .section-label {
+    font-size: 13px; font-weight: 600; color: #444;
+    margin-bottom: 6px; display: block;
+  }
+
+  /* ════════════════════════════════════════
+     スマホ用スタイル（768px 以下）
+     ════════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* ヘッダー */
+    header { padding: 12px 16px; position: sticky; top: 0; }
+    header h1 { font-size: 15px; }
+
+    /* PC ナビ非表示、スマホナビ表示 */
+    nav#pc-nav { display: none; }
+    nav#sp-nav { display: block; }
+
+    /* ボトムナビ分の余白 */
+    body { padding-bottom: 60px; }
+
+    /* コンテナ */
+    .container { margin: 12px auto; padding: 0 12px; }
+
+    /* 1カラム化 */
+    .two-col {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .col-sticky { position: static; }
+    .form-grid { grid-template-columns: 1fr; gap: 8px; }
+
+    /* カード */
+    .card { padding: 14px; border-radius: 6px; margin-bottom: 12px; }
+    .card h2 { font-size: 14px; margin-bottom: 10px; }
+
+    /* フォーム */
+    select, input[type=text], textarea {
+      padding: 10px 12px; font-size: 16px; /* iOS ズーム防止 */
+    }
+    .form-row { margin-bottom: 10px; }
+    label { font-size: 13px; margin-bottom: 5px; }
+
+    /* ボタン */
+    .btn { padding: 12px 20px; font-size: 15px; border-radius: 8px; }
+    .btn-sm { font-size: 13px; padding: 8px 14px; }
+    #btn-generate { padding: 14px; font-size: 15px; }
+
+    /* チャット */
+    .chat-messages { height: 220px; }
+    .chat-input-area { padding: 8px; gap: 6px; }
+    .chat-input-area textarea {
+      font-size: 16px; padding: 8px 10px;
+    }
+    #btn-chat { padding: 10px 14px; font-size: 14px; white-space: nowrap; }
+    .chat-bubble { font-size: 13px; }
+
+    /* 履歴 —— テーブル非表示、カード表示 */
+    .pc-table  { display: none; }
+    .sp-card-list { display: block; }
+    .sp-inquiry-card {
+      background: white; border-radius: 8px; padding: 14px;
+      margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .sp-inquiry-card .sp-meta {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 6px;
+    }
+    .sp-inquiry-card .sp-date { font-size: 11px; color: #999; }
+    .sp-inquiry-card .sp-excerpt {
+      font-size: 13px; color: #555; line-height: 1.5;
+      margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sp-inquiry-card .sp-footer {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sp-inquiry-card .sp-tags {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .sp-category { font-size: 11px; background: #f0f0f0; color: #555; padding: 2px 8px; border-radius: 10px; }
+
+    /* フィルターバー */
+    .filter-bar { flex-direction: column; gap: 8px; }
+    .filter-bar input,
+    .filter-bar select { width: 100%; min-width: unset; font-size: 16px; }
+    .filter-bar .btn { width: 100%; }
+
+    /* モーダル —— フルスクリーン */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal {
+      width: 100vw; max-width: 100vw;
+      height: 95vh; max-height: 95vh;
+      border-radius: 16px 16px 0 0;
+      padding: 16px;
+    }
+    .modal-header {
+      flex-direction: column; align-items: flex-start; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .modal-header h2 { font-size: 15px; }
+    .modal-header > div {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%;
+    }
+    .modal-header select,
+    .modal-header input {
+      width: 100%; font-size: 14px; padding: 8px 10px;
+    }
+    #m-date { grid-column: 1 / -1; font-size: 11px; }
+    .modal-body-scroll > .two-col {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+      height: auto;
+      flex: unset;
+    }
+    .modal-col .form-row.grow { flex: unset; }
+    .modal-col .form-row.grow .preview-box { max-height: 150px; }
+    .modal-col .form-row.grow textarea { min-height: 100px; resize: vertical; }
+    .modal-col .form-row.grow .chat-box .chat-messages { height: 180px; }
+    .modal-footer { flex-wrap: wrap; gap: 8px; }
+    .modal-footer .btn { flex: 1; text-align: center; padding: 12px; }
+
+    /* プレビューボックス */
+    .preview-box { font-size: 13px; }
+
+    /* プレースホルダーカード */
+    .card-right-placeholder { padding: 24px 16px; font-size: 13px; }
+  }
+
+  /* 超小型スマホ対応 */
+  @media (max-width: 375px) {
+    header h1 { font-size: 13px; }
+    .card { padding: 12px; }
+    .btn { padding: 11px 16px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3a1 1 0 011 1v3h3a1 1 0 010 2h-3v3a1 1 0 01-2 0v-3H8a1 1 0 010-2h3V7a1 1 0 011-1z"/></svg>
+  <h1>健保問い合わせサポートシステム</h1>
+  <div class="header-ai">
+    <label for="provider-select">AI</label>
+    <select id="provider-select" onchange="changeProvider(this.value)"></select>
+  </div>
+</header>
+
+<!-- PC ナビ -->
+<nav id="pc-nav">
+  <button class="active" onclick="showPage('new')">新規問い合わせ</button>
+  <button onclick="showPage('list')">対応履歴</button>
+</nav>
+
+<!-- スマホ ボトムナビ -->
+<nav id="sp-nav">
+  <div class="sp-nav-inner">
+    <button id="sp-btn-new" class="active" onclick="showPage('new')">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      新規
+    </button>
+    <button id="sp-btn-list" onclick="showPage('list')">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      履歴
+    </button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- 新規問い合わせページ -->
+  <div id="page-new">
+    <div id="alert-area"></div>
+    <div class="two-col">
+
+      <!-- 左カラム：入力 + 草案 -->
+      <div class="col-sticky">
+        <div class="card">
+          <h2>問い合わせ内容</h2>
+          <div class="form-grid">
+            <div class="form-row">
+              <label>カテゴリ</label>
+              <select id="category">
+                <option value="">選択してください</option>
+                <option>資格・適用</option>
+                <option>保険給付</option>
+                <option>保険料</option>
+                <option>保健事業</option>
+                <option>健康診断</option>
+                <option>出産・育児</option>
+                <option>退職・任意継続</option>
+                <option>その他</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>担当者名</label>
+              <input type="text" id="staff" placeholder="例: 山田">
+            </div>
+          </div>
+          <div class="form-row">
+            <label>問い合わせ内容</label>
+            <textarea id="content" rows="5" placeholder="被保険者からの問い合わせ内容を入力してください..."></textarea>
+          </div>
+          <button class="btn btn-primary" id="btn-generate" onclick="generateDraft()" style="width:100%">
+            AI回答草案を生成
+          </button>
+        </div>
+
+        <div id="draft-card" style="display:none">
+          <div class="card">
+            <h2>AI生成 回答草案</h2>
+            <p style="font-size:12px;color:#999;margin-bottom:10px">編集可能です。右欄（PC）または下欄（スマホ）で確認・相談してから最終回答へ反映できます</p>
+            <textarea id="ai-draft" rows="10"></textarea>
+            <div id="references-area" style="display:none;margin-top:12px">
+              <div class="references-label">
+                <svg width="14" height="14" fill="none" stroke="#8a6d00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                参考文献・根拠
+              </div>
+              <div class="references-box" id="ai-references"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右カラム：最終回答 + チャット -->
+      <div id="right-col">
+        <div id="right-placeholder" class="card-right-placeholder">
+          <svg width="40" height="40" fill="#c8ddf5" viewBox="0 0 24 24" style="margin-bottom:12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <p>草案を生成すると<br>この欄が表示されます</p>
+        </div>
+
+        <div id="right-content" style="display:none">
+          <div class="card">
+            <h2>最終回答</h2>
+            <div class="form-row">
+              <textarea id="final-response" rows="8" placeholder="草案を参考に最終回答を入力、または草案をそのまま使用..."></textarea>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-success" onclick="saveFinal()" style="flex:1">保存・完了</button>
+              <button class="btn btn-secondary" onclick="saveDraft()" style="flex:1">対応中として保存</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>AIへの確認・相談</h2>
+            <p class="chat-hint">不明点・解釈確認・修正依頼などをAIに質問できます</p>
+            <div class="chat-box">
+              <div class="chat-messages" id="chat-messages">
+                <div style="color:#bbb;font-size:13px;text-align:center;margin:auto">質問を入力するとAIが回答します</div>
+              </div>
+              <div class="chat-input-area">
+                <textarea id="chat-input" rows="2"
+                  placeholder="例：被扶養者が対象の場合は？（Enterで送信、Shift+Enterで改行）"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+                <button class="btn btn-primary" id="btn-chat" onclick="sendChat()" style="align-self:flex-end;white-space:nowrap">送信</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 対応履歴ページ -->
+  <div id="page-list" class="page-hidden">
+    <div class="card">
+      <h2>対応履歴一覧</h2>
+      <div class="filter-bar">
+        <input type="text" id="search-keyword" placeholder="キーワード検索..." onkeyup="if(event.key==='Enter')loadList()">
+        <select id="filter-category" onchange="loadList()">
+          <option value="">すべてのカテゴリ</option>
+          <option>資格・適用</option>
+          <option>保険給付</option>
+          <option>保険料</option>
+          <option>保健事業</option>
+          <option>健康診断</option>
+          <option>出産・育児</option>
+          <option>退職・任意継続</option>
+          <option>その他</option>
+        </select>
+        <select id="filter-status" onchange="loadList()">
+          <option value="">すべてのステータス</option>
+          <option>未対応</option>
+          <option>対応中</option>
+          <option>完了</option>
+        </select>
+        <button class="btn btn-secondary" onclick="loadList()" style="white-space:nowrap">検索</button>
+      </div>
+      <!-- PC: テーブル -->
+      <div id="list-container-table" class="pc-table">
+        <p style="color:#888;font-size:14px;">読み込み中...</p>
+      </div>
+      <!-- スマホ: カード -->
+      <div id="list-container-cards" class="sp-card-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">問い合わせ詳細</h2>
+      <div>
+        <select id="m-status" style="width:auto;padding:5px 10px;font-size:13px"></select>
+        <select id="m-category" style="width:auto;padding:5px 10px;font-size:13px"></select>
+        <input type="text" id="m-staff" placeholder="担当者" style="width:100px;padding:5px 10px;font-size:13px">
+        <span style="font-size:12px;color:#999" id="m-date"></span>
+      </div>
+    </div>
+
+    <div class="modal-body-scroll">
+    <div class="two-col" style="gap:20px;height:100%">
+
+      <!-- 左：問い合わせ内容 + AI草案 + メモ -->
+      <div class="modal-col">
+        <div class="form-row" style="flex:0 0 auto;max-height:30%">
+          <span class="section-label">問い合わせ内容</span>
+          <div class="preview-box" id="m-content"></div>
+        </div>
+        <div class="form-row grow" id="m-ai-draft-row" style="display:none">
+          <span class="section-label">AI生成草案</span>
+          <div class="preview-box blue" id="m-ai-draft"></div>
+          <div id="m-references-area" style="display:none;margin-top:8px">
+            <div class="references-label">
+              <svg width="13" height="13" fill="none" stroke="#8a6d00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              参考文献・根拠
+            </div>
+            <div class="references-box" id="m-ai-references"></div>
+          </div>
+        </div>
+        <div class="form-row" style="flex:0 0 auto">
+          <span class="section-label">メモ</span>
+          <textarea id="m-notes" rows="3" style="resize:none"></textarea>
+        </div>
+      </div>
+
+      <!-- 右：最終回答 + AI相談履歴 -->
+      <div class="modal-col">
+        <div class="form-row grow" id="m-final-row">
+          <span class="section-label">最終回答</span>
+          <textarea id="m-final"></textarea>
+        </div>
+        <div class="form-row grow" id="m-chat-row" style="display:none">
+          <span class="section-label" id="m-chat-label">AI相談履歴</span>
+          <div class="chat-box">
+            <div class="chat-messages" id="m-chat-messages"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteInquiry()">削除</button>
+      <button class="btn btn-primary" onclick="saveModal()">保存</button>
+      <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentId = null;
+let chatHistory = [];
+let currentInquiry = { content: '', category: '', ai_draft: '' };
+let currentProvider = 'claude';
+
+// スマホ判定
+const isMobile = () => window.innerWidth <= 768;
+
+// 起動時に選択中AIプロバイダとCLI導入状況を読み込む
+async function initSettings() {
+  const sel = document.getElementById('provider-select');
+  try {
+    const data = await (await fetch('/api/settings')).json();
+    currentProvider = data.provider;
+    sel.innerHTML = '';
+    data.providers.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.available ? p.label : `${p.label}（未導入）`;
+      opt.disabled = !p.available;
+      if (p.id === currentProvider) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch(e) {
+    sel.innerHTML = '<option>読込失敗</option>';
+  }
+}
+
+// AIプロバイダの切り替えをローカルに保存する
+async function changeProvider(provider) {
+  try {
+    await fetch('/api/settings', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ provider })
+    });
+    currentProvider = provider;
+    showAlert(`AIを「${provider}」に切り替えました`);
+  } catch(e) {
+    showAlert('AIの切り替えに失敗しました', 'error');
+  }
+}
+
+function showPage(page) {
+  document.getElementById('page-new').classList.toggle('page-hidden', page !== 'new');
+  document.getElementById('page-list').classList.toggle('page-hidden', page !== 'list');
+
+  // PC ナビ
+  document.querySelectorAll('#pc-nav button').forEach((b, i) => {
+    b.classList.toggle('active', (page === 'new' && i === 0) || (page === 'list' && i === 1));
+  });
+  // スマホ ナビ
+  document.getElementById('sp-btn-new').classList.toggle('active', page === 'new');
+  document.getElementById('sp-btn-list').classList.toggle('active', page === 'list');
+
+  if (page === 'list') loadList();
+}
+
+function showAlert(msg, type='success') {
+  const el = document.getElementById('alert-area');
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(() => el.innerHTML = '', 4000);
+}
+
+async function generateDraft() {
+  const content = document.getElementById('content').value.trim();
+  if (!content) { showAlert('問い合わせ内容を入力してください', 'error'); return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>生成中...';
+
+  try {
+    const res = await fetch('/api/inquiries', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        category: document.getElementById('category').value,
+        content,
+        staff: document.getElementById('staff').value,
+        provider: currentProvider
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || '生成に失敗しました');
+    const data = await res.json();
+
+    currentId = data.id;
+    document.getElementById('ai-draft').value = data.ai_draft;
+    document.getElementById('final-response').value = data.ai_draft;
+    document.getElementById('draft-card').style.display = 'block';
+    document.getElementById('right-placeholder').style.display = 'none';
+    document.getElementById('right-content').style.display = 'block';
+
+    const refsArea = document.getElementById('references-area');
+    const refsBox = document.getElementById('ai-references');
+    if (data.ai_references) {
+      refsBox.textContent = data.ai_references;
+      refsArea.style.display = 'block';
+    } else {
+      refsArea.style.display = 'none';
+    }
+
+    chatHistory = [];
+    currentInquiry = {
+      content,
+      category: document.getElementById('category').value,
+      ai_draft: data.ai_draft
+    };
+    document.getElementById('chat-messages').innerHTML =
+      '<div style="color:#bbb;font-size:13px;text-align:center;margin:auto">質問を入力するとAIが回答します</div>';
+
+    // スマホの場合、草案カードまでスクロール
+    if (isMobile()) {
+      setTimeout(() => {
+        document.getElementById('draft-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  } catch(e) {
+    showAlert(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'AI回答草案を生成';
+  }
+}
+
+async function saveFinal() {
+  const resp = document.getElementById('final-response').value.trim();
+  if (!resp) return;
+  await fetch(`/api/inquiries/${currentId}`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({final_response: resp, status: '完了'})
+  });
+  showAlert('保存しました（ステータス: 完了）');
+  resetForm();
+}
+
+async function saveDraft() {
+  const resp = document.getElementById('final-response').value.trim();
+  await fetch(`/api/inquiries/${currentId}`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({final_response: resp, status: '対応中'})
+  });
+  showAlert('保存しました（ステータス: 対応中）');
+  resetForm();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('btn-chat');
+  btn.disabled = true;
+  btn.textContent = '...';
+  input.value = '';
+
+  appendChatBubble('user', question);
+  chatHistory.push({ role: 'user', content: question });
+  currentInquiry.ai_draft = document.getElementById('ai-draft').value;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        inquiry_id: currentId,
+        inquiry_content: currentInquiry.content,
+        category: currentInquiry.category,
+        ai_draft: currentInquiry.ai_draft,
+        history: chatHistory.slice(0, -1),
+        question,
+        provider: currentProvider
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    const data = await res.json();
+    appendChatBubble('assistant', data.answer);
+    chatHistory.push({ role: 'assistant', content: data.answer });
+  } catch(e) {
+    appendChatBubble('assistant', 'エラー: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '送信';
+  }
+}
+
+function appendChatBubble(role, text) {
+  const container = document.getElementById('chat-messages');
+  const placeholder = container.querySelector('div[style*="margin:auto"]');
+  if (placeholder) placeholder.remove();
+
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}`;
+  div.textContent = text;
+
+  if (role === 'assistant') {
+    const btn = document.createElement('span');
+    btn.className = 'apply-btn';
+    btn.textContent = '最終回答へ反映';
+    btn.onclick = () => applyToFinal(text, btn);
+    div.appendChild(document.createElement('br'));
+    div.appendChild(btn);
+  }
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// AI相談の回答を「元の草案」と統合して最終回答を再生成する
+// （草案は上書きせず保持し、最終回答だけを再生成して反映する）
+async function applyToFinal(chatAnswer, btn) {
+  const baseDraft = document.getElementById('ai-draft').value;
+  const finalEl = document.getElementById('final-response');
+  const origLabel = btn.textContent;
+  btn.textContent = '反映中...';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const res = await fetch('/api/refine', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        inquiry_content: currentInquiry.content,
+        category: currentInquiry.category,
+        ai_draft: baseDraft,
+        chat_answer: chatAnswer,
+        history: chatHistory,
+        provider: currentProvider
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).detail || '再生成に失敗しました');
+    const data = await res.json();
+    finalEl.value = data.final_response;
+    showAlert('AI相談の内容を反映し、最終回答を再生成しました');
+  } catch(e) {
+    showAlert(e.message, 'error');
+  } finally {
+    btn.textContent = origLabel;
+    btn.style.pointerEvents = '';
+  }
+}
+
+function resetForm() {
+  ['content','ai-draft','final-response'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('category').value = '';
+  document.getElementById('staff').value = '';
+  document.getElementById('draft-card').style.display = 'none';
+  document.getElementById('right-placeholder').style.display = 'block';
+  document.getElementById('right-content').style.display = 'none';
+  document.getElementById('chat-messages').innerHTML =
+    '<div style="color:#bbb;font-size:13px;text-align:center;margin:auto">質問を入力するとAIが回答します</div>';
+  currentId = null;
+  chatHistory = [];
+  currentInquiry = { content: '', category: '', ai_draft: '' };
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function loadList() {
+  const keyword  = document.getElementById('search-keyword').value;
+  const status   = document.getElementById('filter-status').value;
+  const category = document.getElementById('filter-category').value;
+  const params = new URLSearchParams();
+  if (status)   params.set('status', status);
+  if (category) params.set('category', category);
+  if (keyword)  params.set('keyword', keyword);
+  const url = '/api/inquiries?' + params.toString();
+
+  const items = await (await fetch(url)).json();
+
+  // PC テーブル
+  const tbl = document.getElementById('list-container-table');
+  // スマホ カード
+  const cards = document.getElementById('list-container-cards');
+
+  if (!items.length) {
+    const empty = '<p style="color:#888;font-size:14px;padding:20px 0">該当する記録はありません</p>';
+    tbl.innerHTML = empty;
+    cards.innerHTML = empty;
+    return;
+  }
+
+  // PC テーブル
+  tbl.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>日時</th><th>カテゴリ</th><th>問い合わせ（抜粋）</th><th>担当</th><th>ステータス</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(i => `<tr>
+          <td style="white-space:nowrap;color:#888">${i.created_at}</td>
+          <td>${i.category||'—'}</td>
+          <td style="max-width:280px">${i.content.substring(0,60)}${i.content.length>60?'...':''}</td>
+          <td>${i.staff||'—'}</td>
+          <td><span class="badge badge-${i.status}">${i.status}</span></td>
+          <td><button class="btn btn-secondary btn-sm" onclick="openModal(${i.id})">詳細</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  // スマホ カード
+  cards.innerHTML = items.map(i => `
+    <div class="sp-inquiry-card" onclick="openModal(${i.id})">
+      <div class="sp-meta">
+        <div class="sp-tags">
+          <span class="badge badge-${i.status}">${i.status}</span>
+          ${i.category ? `<span class="sp-category">${i.category}</span>` : ''}
+        </div>
+        <span class="sp-date">${i.created_at}</span>
+      </div>
+      <div class="sp-excerpt">${i.content.substring(0,80)}${i.content.length>80?'...':''}</div>
+      <div class="sp-footer">
+        <span style="font-size:12px;color:#aaa">担当: ${i.staff||'—'}</span>
+        <span style="font-size:12px;color:#1a5fa8;font-weight:600">詳細 ›</span>
+      </div>
+    </div>`).join('');
+}
+
+async function openModal(id) {
+  currentId = id;
+  const item = await (await fetch(`/api/inquiries/${id}`)).json();
+  const chatLog = JSON.parse(item.chat_history || '[]');
+
+  document.getElementById('modal-title').textContent = `問い合わせ詳細 #${id}`;
+  document.getElementById('m-date').textContent = item.created_at;
+
+  const statusSel = document.getElementById('m-status');
+  statusSel.innerHTML = ['未対応','対応中','完了'].map(s =>
+    `<option ${item.status===s?'selected':''}>${s}</option>`).join('');
+
+  const catSel = document.getElementById('m-category');
+  catSel.innerHTML = `<option value="">カテゴリ</option>` +
+    ['資格・適用','保険給付','保険料','保健事業','健康診断','出産・育児','退職・任意継続','その他']
+    .map(c => `<option ${item.category===c?'selected':''}>${c}</option>`).join('');
+
+  document.getElementById('m-staff').value = item.staff || '';
+  document.getElementById('m-content').textContent = item.content;
+
+  const aiDraftRow = document.getElementById('m-ai-draft-row');
+  const contentRow = document.querySelector('#modal-overlay .modal-col .form-row:first-child');
+  if (item.ai_draft) {
+    document.getElementById('m-ai-draft').textContent = item.ai_draft;
+    aiDraftRow.style.display = 'flex';
+    if (contentRow) contentRow.style.flex = '0 0 auto';
+  } else {
+    aiDraftRow.style.display = 'none';
+    if (contentRow) { contentRow.style.flex = '1'; contentRow.classList.add('grow'); }
+  }
+
+  const mRefsArea = document.getElementById('m-references-area');
+  const mRefsBox = document.getElementById('m-ai-references');
+  if (item.ai_references) {
+    mRefsBox.textContent = item.ai_references;
+    mRefsArea.style.display = 'block';
+  } else {
+    mRefsArea.style.display = 'none';
+  }
+  document.getElementById('m-notes').value = item.notes || '';
+  document.getElementById('m-final').value = item.final_response || '';
+
+  const chatRow = document.getElementById('m-chat-row');
+  const chatMsgs = document.getElementById('m-chat-messages');
+  const finalRow = document.getElementById('m-final-row');
+  if (chatLog.length) {
+    document.getElementById('m-chat-label').textContent = `AI相談履歴（${Math.floor(chatLog.length/2)}往復）`;
+    chatMsgs.innerHTML = chatLog.map(m => `
+      <div style="
+        max-width:88%;padding:8px 12px;border-radius:10px;
+        font-size:13px;line-height:1.6;white-space:pre-wrap;
+        ${m.role==='user'
+          ? 'background:#1a5fa8;color:white;align-self:flex-end;border-bottom-right-radius:3px;margin-left:auto'
+          : 'background:white;border:1px solid #d0e0f0;align-self:flex-start;border-bottom-left-radius:3px'}
+      ">${m.content.replace(/</g,'&lt;')}</div>`).join('');
+    chatRow.style.display = 'flex';
+    finalRow.style.flex = '1';
+    chatRow.style.flex = '1';
+    setTimeout(() => chatMsgs.scrollTop = chatMsgs.scrollHeight, 50);
+  } else {
+    chatRow.style.display = 'none';
+    finalRow.style.flex = '1';
+  }
+
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+async function saveModal() {
+  await fetch(`/api/inquiries/${currentId}`, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      status:         document.getElementById('m-status').value,
+      category:       document.getElementById('m-category').value,
+      staff:          document.getElementById('m-staff').value,
+      final_response: document.getElementById('m-final').value,
+      notes:          document.getElementById('m-notes').value,
+    })
+  });
+  closeModal();
+  loadList();
+}
+
+async function deleteInquiry() {
+  if (!confirm('この記録を削除しますか？')) return;
+  await fetch(`/api/inquiries/${currentId}`, {method: 'DELETE'});
+  closeModal();
+  loadList();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  currentId = null;
+}
+
+// 起動時の初期化
+initSettings();
+</script>
+</body>
+</html>

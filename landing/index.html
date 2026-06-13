@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ケンポアシスト｜健保事務のAI相棒</title>
+<meta name="description" content="ケンポアシストは、健康保険組合の問い合わせ対応をAIで支援するローカルアプリ。Claude / ChatGPT / Gemini から選べ、回答草案と参考文献を自動作成。データは手元に保存。買い切り・席単位ライセンス。">
+<style>
+  :root{
+    --blue:#1a5fa8; --blue-d:#134a85; --blue-l:#eef4fb; --ink:#1f2733;
+    --gray:#5b6675; --line:#e1ebf7; --bg:#f7fafd; --ok:#1a7f43;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    color:var(--ink);line-height:1.8;background:#fff;-webkit-font-smoothing:antialiased}
+  a{color:var(--blue);text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .btn{display:inline-block;background:var(--blue);color:#fff;font-weight:700;
+    padding:14px 30px;border-radius:8px;border:none;cursor:pointer;font-size:16px;
+    transition:.2s;box-shadow:0 4px 14px rgba(26,95,168,.25)}
+  .btn:hover{background:var(--blue-d);transform:translateY(-1px)}
+  .btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--blue);box-shadow:none}
+  .btn.ghost:hover{background:var(--blue-l)}
+  section{padding:72px 0}
+  h2.sec{font-size:28px;text-align:center;margin-bottom:8px}
+  p.sec-sub{text-align:center;color:var(--gray);margin-bottom:44px}
+
+  /* ヘッダー */
+  header.nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);z-index:50}
+  .nav-in{display:flex;align-items:center;gap:14px;height:62px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;color:var(--blue)}
+  .logo svg{width:26px;height:26px}
+  .nav-links{margin-left:auto;display:flex;gap:22px;align-items:center}
+  .nav-links a{color:var(--ink);font-size:14px;font-weight:600}
+  .nav-links .btn{padding:9px 18px;font-size:14px;color:#fff}
+  @media(max-width:760px){.nav-links a:not(.btn){display:none}}
+
+  /* ヒーロー */
+  .hero{background:linear-gradient(160deg,#eef4fb 0%,#dfeafa 60%,#cfe0f6 100%);padding:80px 0 90px}
+  .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+  .hero h1{font-size:40px;line-height:1.35;letter-spacing:.01em}
+  .hero .tagline{display:inline-block;background:var(--blue);color:#fff;font-weight:700;
+    font-size:14px;padding:5px 14px;border-radius:20px;margin-bottom:18px}
+  .hero p.lead{font-size:17px;color:var(--gray);margin:18px 0 30px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .hero-note{font-size:13px;color:var(--gray);margin-top:16px}
+  @media(max-width:840px){.hero-grid{grid-template-columns:1fr}.hero h1{font-size:30px}}
+
+  /* アプリ画面モック */
+  .mock{background:#fff;border-radius:12px;box-shadow:0 18px 50px rgba(20,60,120,.22);overflow:hidden;border:1px solid var(--line)}
+  .mock-bar{background:var(--blue);color:#fff;padding:10px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .mock-bar .sel{margin-left:auto;background:rgba(255,255,255,.2);border-radius:5px;padding:3px 10px;font-size:12px;font-weight:600}
+  .mock-body{padding:16px;display:grid;gap:10px}
+  .mock-label{font-size:11px;color:var(--gray);font-weight:700}
+  .mock-box{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:10px;font-size:12px;color:#3a4654}
+  .mock-box.blue{background:var(--blue-l);border-color:#cfe0f6}
+  .mock-box.refs{background:#fffbe9;border-color:#f0e3b0;color:#6b5800}
+
+  /* 特長 */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:840px){.feat-grid{grid-template-columns:1fr}}
+  .feat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 22px;transition:.2s}
+  .feat:hover{box-shadow:0 10px 30px rgba(20,60,120,.1);transform:translateY(-3px)}
+  .feat .ic{width:46px;height:46px;border-radius:10px;background:var(--blue-l);display:flex;
+    align-items:center;justify-content:center;margin-bottom:14px}
+  .feat .ic svg{width:24px;height:24px;stroke:var(--blue)}
+  .feat h3{font-size:17px;margin-bottom:8px}
+  .feat p{font-size:14px;color:var(--gray)}
+
+  /* AI3種 */
+  .ai-row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:8px}
+  .ai-chip{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    border-radius:50px;padding:12px 26px;font-weight:700;font-size:16px}
+  .ai-chip .dot{width:11px;height:11px;border-radius:50%}
+
+  /* 流れ */
+  .flow{background:var(--bg)}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  @media(max-width:840px){.steps{grid-template-columns:1fr 1fr}}
+  .step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px 16px;text-align:center;position:relative}
+  .step .n{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+  .step h4{font-size:14px;margin-bottom:4px}
+  .step p{font-size:12px;color:var(--gray)}
+
+  /* 安心 */
+  .trust{background:var(--blue);color:#fff}
+  .trust h2.sec{color:#fff}.trust p.sec-sub{color:#cfe0f6}
+  .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:840px){.trust-grid{grid-template-columns:1fr}}
+  .trust-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:24px}
+  .trust-card h3{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .trust-card p{font-size:14px;color:#dCe8f7}
+
+  /* 価格 */
+  .price-card{max-width:440px;margin:0 auto;background:#fff;border:2px solid var(--blue);
+    border-radius:16px;padding:38px 32px;text-align:center;box-shadow:0 14px 40px rgba(20,60,120,.12)}
+  .price-badge{display:inline-block;background:var(--blue-l);color:var(--blue);font-weight:700;
+    font-size:13px;padding:5px 16px;border-radius:20px;margin-bottom:16px}
+  .price-amt{font-size:46px;font-weight:800;color:var(--ink);line-height:1.1}
+  .price-amt small{font-size:18px;color:var(--gray);font-weight:600}
+  .price-unit{color:var(--gray);font-size:14px;margin:6px 0 22px}
+  .price-list{text-align:left;display:grid;gap:10px;margin:22px 0 26px}
+  .price-list li{list-style:none;display:flex;gap:10px;font-size:14px}
+  .price-list li svg{width:18px;height:18px;stroke:var(--ok);flex-shrink:0;margin-top:4px}
+
+  /* FAQ */
+  details{background:#fff;border:1px solid var(--line);border-radius:10px;padding:0;margin-bottom:12px}
+  details summary{padding:18px 22px;font-weight:700;cursor:pointer;font-size:15px;list-style:none;position:relative}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";position:absolute;right:22px;color:var(--blue);font-size:20px}
+  details[open] summary::after{content:"−"}
+  details .ans{padding:0 22px 18px;color:var(--gray);font-size:14px}
+
+  /* 問い合わせ */
+  .contact{background:var(--bg)}
+  form.cf{max-width:620px;margin:0 auto;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:34px;display:grid;gap:16px}
+  .cf label{font-size:13px;font-weight:700}
+  .cf .req{color:#c0392b;font-size:12px;margin-left:4px}
+  .cf input,.cf textarea{width:100%;border:1px solid var(--line);border-radius:8px;
+    padding:11px 13px;font-size:14px;font-family:inherit}
+  .cf input:focus,.cf textarea:focus{outline:none;border-color:var(--blue)}
+  .cf .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:560px){.cf .row2{grid-template-columns:1fr}}
+  .cf .note{font-size:12px;color:var(--gray)}
+  #cf-msg{font-size:14px;font-weight:700;text-align:center}
+
+  footer{background:#101822;color:#9fb0c4;padding:40px 0;font-size:13px}
+  .foot-in{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+  .foot-logo{color:#fff;font-weight:800;font-size:16px}
+</style>
+</head>
+<body>
+
+<!-- ナビ -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="#1a5fa8"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3a1 1 0 011 1v3h3a1 1 0 010 2h-3v3a1 1 0 01-2 0v-3H8a1 1 0 010-2h3V7a1 1 0 011-1z"/></svg>
+      ケンポアシスト
+    </div>
+    <nav class="nav-links">
+      <a href="#features">特長</a>
+      <a href="#flow">使い方</a>
+      <a href="#price">価格</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact" class="btn">お問い合わせ</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ヒーロー -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tagline">健保事務のAI相棒</span>
+      <h1>被保険者からの問い合わせ対応を、<br>AIでもっと速く・正確に。</h1>
+      <p class="lead">
+        ケンポアシストは、健康保険組合の事務担当者のための問い合わせ対応支援アプリです。
+        使い慣れた <b>Claude / ChatGPT / Gemini</b> から選んで、回答草案と根拠（参考文献）を自動作成。
+        データはすべて<b>お使いのPCの中</b>に保存されます。
+      </p>
+      <div class="hero-cta">
+        <a href="#contact" class="btn">無料で相談・お問い合わせ</a>
+        <a href="#features" class="btn ghost">特長を見る</a>
+      </div>
+      <p class="hero-note">買い切り・席単位ライセンス／Windows・macOS対応／クラウド不要のローカル動作</p>
+    </div>
+    <div>
+      <div class="mock">
+        <div class="mock-bar">ケンポアシスト <span class="sel">AI: Claude ▾</span></div>
+        <div class="mock-body">
+          <div>
+            <div class="mock-label">問い合わせ内容</div>
+            <div class="mock-box">退職後に任意継続被保険者になれる期間と申請期限を教えてください。</div>
+          </div>
+          <div>
+            <div class="mock-label">AI回答草案</div>
+            <div class="mock-box blue">お問い合わせいただきありがとうございます。任意継続被保険者となれる期間は、資格喪失日から最長2年間です。申請は資格喪失日から20日以内に…</div>
+          </div>
+          <div>
+            <div class="mock-label">参考文献・根拠</div>
+            <div class="mock-box refs">・健康保険法 第3条第4項（任意継続被保険者）<br>・健康保険法 第37条第1項（20日以内の申請期限）</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 課題 -->
+<section>
+  <div class="wrap">
+    <h2 class="sec">こんなお悩みはありませんか？</h2>
+    <p class="sec-sub">健保の問い合わせ対応は、正確さと丁寧さが求められ、担当者の負担が大きい業務です。</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+        <h3>回答作成に時間がかかる</h3>
+        <p>制度や条文を確認しながらの回答文作成に、毎回まとまった時間を取られている。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+        <h3>根拠の確認に手間がかかる</h3>
+        <p>「どの条文・通達が根拠か」を都度調べ直すのが大変。説明責任も問われる。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M2 12h20"/></svg></div>
+        <h3>クラウドに個人情報を出せない</h3>
+        <p>一般的なクラウドサービスは、被保険者の情報を預けることに不安がある。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 特長 -->
+<section id="features" style="background:var(--bg)">
+  <div class="wrap">
+    <h2 class="sec">ケンポアシストの特長</h2>
+    <p class="sec-sub">AIによる下案作成から履歴管理まで。導入もかんたんです。</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1-6.3-4.6L5.7 21l2.3-7.1-6-4.5h7.6z"/></svg></div>
+        <h3>3つのAIから選べる</h3>
+        <p>Claude / ChatGPT / Gemini に対応。ご契約中のAIを画面でいつでも切り替えできます。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></div>
+        <h3>回答草案＋参考文献を自動生成</h3>
+        <p>問い合わせ内容を入力するだけで、丁寧な回答文と、根拠となる法令・条文を提示します。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 01-12 7.7L3 21l1.8-6A8.5 8.5 0 1121 11.5z"/></svg></div>
+        <h3>AIと相談して仕上げる</h3>
+        <p>草案の不明点をAIに質問し、その結果を反映して最終回答に仕上げられます。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+        <h3>対応履歴を管理</h3>
+        <p>問い合わせ・回答・ステータス・担当者・メモを記録。あとから検索・編集できます。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></div>
+        <h3>データは手元に保存</h3>
+        <p>問い合わせ履歴はお使いのPC内に保存。運営側のサーバーには一切送られません。</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg></div>
+        <h3>かんたん初期設定</h3>
+        <p>画面の「初期設定」ボタンから、AIの準備をガイドに沿ってボタン操作で行えます。</p>
+      </div>
+    </div>
+    <div class="ai-row">
+      <div class="ai-chip"><span class="dot" style="background:#d97706"></span>Claude</div>
+      <div class="ai-chip"><span class="dot" style="background:#10a37f"></span>ChatGPT</div>
+      <div class="ai-chip"><span class="dot" style="background:#4285f4"></span>Gemini</div>
+    </div>
+  </div>
+</section>
+
+<!-- 流れ -->
+<section id="flow" class="flow">
+  <div class="wrap">
+    <h2 class="sec">使い方は3ステップ</h2>
+    <p class="sec-sub">起動して、入力して、仕上げる。シンプルな操作です。</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h4>起動</h4><p>アプリを開くとブラウザで画面が立ち上がります</p></div>
+      <div class="step"><div class="n">2</div><h4>入力</h4><p>問い合わせ内容を入力して草案を生成</p></div>
+      <div class="step"><div class="n">3</div><h4>相談</h4><p>不明点をAIに質問して内容を確認</p></div>
+      <div class="step"><div class="n">4</div><h4>仕上げ</h4><p>最終回答に反映して完成</p></div>
+      <div class="step"><div class="n">5</div><h4>保存</h4><p>対応履歴として記録・管理</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 安心 -->
+<section class="trust">
+  <div class="wrap">
+    <h2 class="sec">安心してお使いいただくために</h2>
+    <p class="sec-sub">健保業務の特性に配慮した設計です。</p>
+    <div class="trust-grid">
+      <div class="trust-card">
+        <h3>🔒 ローカル完結</h3>
+        <p>問い合わせ・回答・履歴はすべてお使いのPC内に保存。運営側のサーバーには保存されません。</p>
+      </div>
+      <div class="trust-card">
+        <h3>🔑 ライセンス管理</h3>
+        <p>正規にご購入いただいた方だけがご利用いただける、オフライン方式のライセンスキーで保護されています。</p>
+      </div>
+      <div class="trust-card">
+        <h3>👤 ご自身のAIで動作</h3>
+        <p>お手持ちの Claude / ChatGPT / Gemini のアカウントで動作。AIの追加契約を当社で仲介しません。</p>
+      </div>
+    </div>
+    <p style="text-align:center;color:#cfe0f6;font-size:13px;margin-top:26px">
+      ※ 回答生成の際、問い合わせ本文は選択したAI提供元（Anthropic / OpenAI / Google）のクラウドへ送信されます。個人情報の取り扱いは貴組合の規程に従ってご利用ください。
+    </p>
+  </div>
+</section>
+
+<!-- 価格 -->
+<section id="price">
+  <div class="wrap">
+    <h2 class="sec">価格</h2>
+    <p class="sec-sub">買い切り・席単位ライセンス。月額費用はかかりません。</p>
+    <div class="price-card">
+      <span class="price-badge">買い切りライセンス</span>
+      <!-- TODO: 価格を確定後にここを差し替えてください -->
+      <div class="price-amt"><small>¥</small>XX,XXX</div>
+      <div class="price-unit">（税込）／ 1席（1台）あたり</div>
+      <ul class="price-list">
+        <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>すべての機能をご利用いただけます</li>
+        <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>月額・追加課金なしの買い切り</li>
+        <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Windows / macOS 対応</li>
+        <li><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>複数名でご利用の場合は人数分のライセンス</li>
+      </ul>
+      <a href="#contact" class="btn" style="width:100%">購入について問い合わせる</a>
+      <p style="font-size:12px;color:var(--gray);margin-top:14px">
+        ※ ご利用には Claude / ChatGPT / Gemini いずれかのアカウントが別途必要です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="background:var(--bg)">
+  <div class="wrap" style="max-width:780px">
+    <h2 class="sec">よくあるご質問</h2>
+    <p class="sec-sub">導入前のご不明点はお問い合わせください。</p>
+
+    <details><summary>AIの利用料は別途かかりますか？</summary>
+      <div class="ans">はい。ケンポアシストは、お手持ちの Claude / ChatGPT / Gemini のアカウントで動作します。各AIのご契約（個人プラン等）はお客様ご自身でご用意ください。本製品はそのアカウントを使って回答を生成します。</div></details>
+
+    <details><summary>難しい設定は必要ですか？</summary>
+      <div class="ans">いいえ。アプリ内の「初期設定」画面から、AIの準備（導入・ログイン・接続確認）をボタン操作で進められます。コマンド入力は不要です（ログインの「許可」操作のみお客様が行います）。</div></details>
+
+    <details><summary>問い合わせデータはどこに保存されますか？</summary>
+      <div class="ans">お使いのPCの中に保存されます。運営側のサーバーには送信・保存されません。なお、回答生成の際は、問い合わせ本文が選択したAI提供元のクラウドに送信されます（クラウドAIを利用するうえで避けられません）。</div></details>
+
+    <details><summary>複数の担当者で使えますか？</summary>
+      <div class="ans">本製品は個人の通常利用を前提としています。複数名でご利用の場合は、担当者ごとに本製品をインストールし、各自のAIアカウントでご利用ください（席単位ライセンス）。</div></details>
+
+    <details><summary>対応OSは何ですか？</summary>
+      <div class="ans">Windows および macOS に対応しています。インターネット接続が必要です。</div></details>
+
+    <details><summary>回答をそのまま送ってよいですか？</summary>
+      <div class="ans">AIが作成するのはあくまで「草案」です。最終的な回答内容は、必ず担当者さまがご確認・ご判断のうえご利用ください。</div></details>
+  </div>
+</section>
+
+<!-- 問い合わせ -->
+<section id="contact" class="contact">
+  <div class="wrap">
+    <h2 class="sec">お問い合わせ・ご購入のご相談</h2>
+    <p class="sec-sub">導入のご相談、お見積り、デモのご希望などお気軽にどうぞ。</p>
+    <!-- TODO: action を送信先（Formspree等のフォームエンドポイント）に差し替えてください -->
+    <form class="cf" id="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+      <div class="row2">
+        <div>
+          <label>組織名 / 健保組合名<span class="req">必須</span></label>
+          <input type="text" name="organization" required>
+        </div>
+        <div>
+          <label>ご担当者名<span class="req">必須</span></label>
+          <input type="text" name="name" required>
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>メールアドレス<span class="req">必須</span></label>
+          <input type="email" name="email" required>
+        </div>
+        <div>
+          <label>電話番号（任意）</label>
+          <input type="tel" name="phone">
+        </div>
+      </div>
+      <div>
+        <label>お問い合わせ内容<span class="req">必須</span></label>
+        <textarea name="message" rows="5" required placeholder="ご質問・ご相談内容をご記入ください"></textarea>
+      </div>
+      <button type="submit" class="btn" style="width:100%">送信する</button>
+      <p class="note">送信いただいた内容は、お問い合わせ対応の目的にのみ使用します。</p>
+      <p id="cf-msg"></p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <div class="foot-logo">ケンポアシスト</div>
+      <div>健保事務のAI相棒</div>
+    </div>
+    <div>© <span id="yr"></span> KenpoAssist. All rights reserved.</div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // フォーム送信（Formspree等のJSON応答に対応。未設定時は案内を表示）
+  const form = document.getElementById('contact-form');
+  const msg = document.getElementById('cf-msg');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.style.color = '#1f2733';
+    if (form.action.includes('YOUR_FORM_ID')) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '※ 送信先が未設定です（フォームのaction属性を設定してください）。';
+      return;
+    }
+    msg.textContent = '送信中...';
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST', body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        form.reset();
+        msg.style.color = '#1a7f43';
+        msg.textContent = '送信しました。ご連絡ありがとうございます。担当者よりご返信いたします。';
+      } else {
+        throw new Error();
+      }
+    } catch (_) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '送信に失敗しました。お手数ですが時間をおいて再度お試しください。';
+    }
+  });
+</script>
+</body>
+</html>

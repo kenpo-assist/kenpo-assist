@@ -3,7 +3,7 @@
 #
 #   pyinstaller kenpo-support.spec
 #
-# 生成物: dist/kenpo-support（Windowsでは kenpo-support.exe）
+# 生成物: dist/KenpoAssist（Windowsでは KenpoAssist.exe）
 # ※ AIの公式CLI（claude / codex / gemini）は同梱されません。
 #    利用者が各自のサブスクでインストール・ログインする前提です。
 
@@ -36,7 +36,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="kenpo-support",
+    name="KenpoAssist",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

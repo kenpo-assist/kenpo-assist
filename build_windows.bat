@@ -1,6 +1,6 @@
 @echo off
 REM Windows 用ビルドスクリプト
-REM 生成物: dist\kenpo-support.exe
+REM 生成物: dist\KenpoAssist.exe
 REM ※ Windows向けexeはWindows上でビルドする必要があります（クロスビルド不可）。
 cd /d "%~dp0"
 
@@ -11,8 +11,8 @@ python -m PyInstaller --noconfirm kenpo-support.spec
 if errorlevel 1 goto :error
 
 echo.
-echo ビルド完了: dist\kenpo-support.exe
-echo 配布時は dist\kenpo-support.exe を渡してください。
+echo ビルド完了: dist\KenpoAssist.exe
+echo 配布時は dist\KenpoAssist.exe を渡してください。
 goto :eof
 
 :error

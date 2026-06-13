@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""健保問い合わせサポートシステム ランチャ
+"""ケンポアシスト（KenpoAssist）ランチャ
 
 ローカルでサーバーを起動し、既定ブラウザで画面を自動的に開きます。
 非エンジニアの利用者がダブルクリック相当で起動できることを想定しています。
@@ -29,7 +29,7 @@ def _open_browser():
 def main():
     # サーバー起動直後にブラウザを開く（起動待ちのため少し遅延）
     threading.Timer(1.5, _open_browser).start()
-    print(f"健保問い合わせサポートシステムを起動します → http://{HOST}:{PORT}/")
+    print(f"ケンポアシストを起動します → http://{HOST}:{PORT}/")
     print("終了するには Ctrl+C を押してください。")
     uvicorn.run(app, host=HOST, port=PORT, log_level="info")
 

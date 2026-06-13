@@ -31,7 +31,7 @@ def resource_path(rel: str) -> str:
 def data_dir() -> Path:
     """書き込み可能なデータ保存先（DB等）。exe化時はユーザーごとのホーム配下に置く。"""
     if IS_FROZEN:
-        base = Path.home() / ".kenpo-support"
+        base = Path.home() / ".kenpoassist"
     else:
         base = Path(__file__).resolve().parent
     base.mkdir(parents=True, exist_ok=True)

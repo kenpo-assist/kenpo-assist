@@ -106,6 +106,18 @@
   .price-list li{list-style:none;display:flex;gap:10px;font-size:14px}
   .price-list li svg{width:18px;height:18px;stroke:var(--ok);flex-shrink:0;margin-top:4px}
 
+  /* 無料お試し */
+  .trial-box{max-width:760px;margin:0 auto;background:linear-gradient(160deg,#eef4fb,#dcebfb);
+    border:1px solid #cfe0f6;border-radius:16px;padding:38px 32px;text-align:center}
+  .trial-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;text-align:left}
+  @media(max-width:680px){.trial-steps{grid-template-columns:1fr}}
+  .trial-step{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;font-size:14px}
+  .trial-step .tn{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--blue);
+    color:#fff;font-weight:700;align-items:center;justify-content:center;margin-bottom:8px;font-size:13px}
+  .trial-step small{color:var(--gray)}
+  .trial-dl{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .trial-note{font-size:12px;color:var(--gray);margin-top:20px;line-height:1.7}
+
   /* FAQ */
   details{background:#fff;border:1px solid var(--line);border-radius:10px;padding:0;margin-bottom:12px}
   details summary{padding:18px 22px;font-weight:700;cursor:pointer;font-size:15px;list-style:none;position:relative}
@@ -145,9 +157,10 @@
     <nav class="nav-links">
       <a href="#features">特長</a>
       <a href="#flow">使い方</a>
+      <a href="#trial">お試し</a>
       <a href="#price">価格</a>
       <a href="#faq">FAQ</a>
-      <a href="#contact" class="btn">お問い合わせ</a>
+      <a href="#trial" class="btn">無料で試す</a>
     </nav>
   </div>
 </header>
@@ -164,10 +177,10 @@
         データはすべて<b>お使いのPCの中</b>に保存されます。
       </p>
       <div class="hero-cta">
-        <a href="#contact" class="btn">無料で相談・お問い合わせ</a>
+        <a href="#trial" class="btn">14日間 無料でお試し</a>
         <a href="#features" class="btn ghost">特長を見る</a>
       </div>
-      <p class="hero-note">買い切り・席単位ライセンス／Windows・macOS対応／クラウド不要のローカル動作</p>
+      <p class="hero-note">無料お試し14日間（キー入力不要）／買い切り・席単位ライセンス／Windows・macOS対応／クラウド不要のローカル動作</p>
     </div>
     <div>
       <div class="mock">
@@ -301,11 +314,35 @@
   </div>
 </section>
 
+<!-- 無料お試し -->
+<section id="trial">
+  <div class="wrap">
+    <h2 class="sec">まずは14日間、無料でお試し</h2>
+    <p class="sec-sub">購入前に、実際のアプリをそのままお試しいただけます。クレジットカード登録は不要です。</p>
+    <div class="trial-box">
+      <div class="trial-steps">
+        <div class="trial-step"><span class="tn">1</span>アプリをダウンロードして起動</div>
+        <div class="trial-step"><span class="tn">2</span>最初の画面で<b>「無料でお試しを始める」</b>を押す<br><small>※ キー入力は不要</small></div>
+        <div class="trial-step"><span class="tn">3</span><b>14日間</b>すべての機能を利用可能</div>
+      </div>
+      <!-- TODO: 配布バイナリの置き場所に合わせてダウンロードURLを設定してください -->
+      <div class="trial-dl">
+        <a href="#" data-os="win" class="btn" onclick="return dlClick(event)">Windows版をダウンロード</a>
+        <a href="#" data-os="mac" class="btn ghost" onclick="return dlClick(event)">macOS版をダウンロード</a>
+      </div>
+      <p class="trial-note">
+        お試し期間の終了後は、ご購入のライセンスキーを入力すれば引き続きご利用いただけます。<br>
+        ※ ご利用には Claude / ChatGPT / Gemini いずれかのアカウントが別途必要です（アプリ内のガイドで設定できます）。
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- 価格 -->
 <section id="price">
   <div class="wrap">
     <h2 class="sec">価格</h2>
-    <p class="sec-sub">買い切り・席単位ライセンス。月額費用はかかりません。</p>
+    <p class="sec-sub">買い切り・席単位ライセンス。月額費用はかかりません。まずは<a href="#trial">14日間の無料お試し</a>からどうぞ。</p>
     <div class="price-card">
       <span class="price-badge">買い切りライセンス</span>
       <!-- TODO: 価格を確定後にここを差し替えてください -->
@@ -333,6 +370,9 @@
 
     <details><summary>AIの利用料は別途かかりますか？</summary>
       <div class="ans">はい。ケンポアシストは、お手持ちの Claude / ChatGPT / Gemini のアカウントで動作します。各AIのご契約（個人プラン等）はお客様ご自身でご用意ください。本製品はそのアカウントを使って回答を生成します。</div></details>
+
+    <details><summary>無料お試しはどうやって始めますか？</summary>
+      <div class="ans">アプリをダウンロードして起動し、最初の画面で「無料でお試しを始める」を押すだけです（キー入力やクレジットカード登録は不要）。14日間すべての機能をご利用いただけます。期間終了後は、ご購入のライセンスキーを入力すれば引き続きお使いいただけます。</div></details>
 
     <details><summary>難しい設定は必要ですか？</summary>
       <div class="ans">いいえ。アプリ内の「初期設定」画面から、AIの準備（導入・ログイン・接続確認）をボタン操作で進められます。コマンド入力は不要です（ログインの「許可」操作のみお客様が行います）。</div></details>
@@ -401,6 +441,23 @@
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
+
+  // TODO: 配布バイナリのダウンロードURLを設定してください（未設定なら案内を表示）
+  const DOWNLOAD_URLS = {
+    win: "",   // 例: "/downloads/KenpoAssist.exe"
+    mac: ""    // 例: "/downloads/KenpoAssist"
+  };
+  function dlClick(e) {
+    const os = e.currentTarget.getAttribute('data-os');
+    const url = DOWNLOAD_URLS[os];
+    if (!url) {
+      e.preventDefault();
+      alert('ダウンロードは準備中です。お手数ですが「お問い合わせ」よりご連絡ください。');
+      return false;
+    }
+    e.currentTarget.setAttribute('href', url);
+    return true;
+  }
 
   // フォーム送信（Formspree等のJSON応答に対応。未設定時は案内を表示）
   const form = document.getElementById('contact-form');

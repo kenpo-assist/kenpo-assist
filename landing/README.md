@@ -10,7 +10,14 @@
 2. **問い合わせフォームの送信先** — `<form ... action="https://formspree.io/f/YOUR_FORM_ID">`
    - 例: [Formspree](https://formspree.io/) や [Getform](https://getform.io/) で無料のフォームエンドポイントを取得し、`action` に貼る。
    - JSON応答（`Accept: application/json`）に対応済み。エンドポイント未設定のままだと送信時に注意メッセージが出ます。
-3. **フッターの著作権表記** — 必要に応じて社名等に調整。
+3. **お試し版ダウンロードURL** — `<script>` 内の `DOWNLOAD_URLS`
+   ```js
+   const DOWNLOAD_URLS = { win: "", mac: "" };
+   ```
+   - 配布バイナリ（`KenpoAssist.exe` / `KenpoAssist`）を置いた場所のURLを設定。
+   - 未設定のままだと、ダウンロードボタン押下時に「準備中」の案内が出ます（安全設計）。
+   - お試し版と製品版は**同じバイナリ**です。アプリ初回画面の「無料でお試しを始める」で14日間試用でき、期間後はライセンスキーで継続利用します。
+4. **フッターの著作権表記** — 必要に応じて社名等に調整。
 
 ## ローカルでの確認
 

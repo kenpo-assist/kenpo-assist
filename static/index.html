@@ -32,6 +32,11 @@
   /* ── 初期設定ウィザード ── */
   .setup-modal { max-width: 720px; height: auto; max-height: 90vh; }
   .license-modal { max-width: 520px; height: auto; }
+  .license-or { text-align: center; color: #aaa; font-size: 12px; margin: 16px 0; }
+  header .trial-chip {
+    background: #fff3cd; color: #8a6d00; font-size: 12px; font-weight: 700;
+    padding: 3px 10px; border-radius: 12px; white-space: nowrap;
+  }
   .setup-intro { font-size: 13px; color: #555; line-height: 1.7; margin-bottom: 14px; }
   .setup-env {
     background: #f5f8fc; border: 1px solid #e1ebf7; border-radius: 8px;
@@ -419,6 +424,7 @@
   <h1>ケンポアシスト</h1>
   <span class="header-tagline">健保事務のAI相棒</span>
   <div class="header-ai">
+    <span id="trial-chip" class="trial-chip" style="display:none"></span>
     <label for="provider-select">AI</label>
     <select id="provider-select" onchange="changeProvider(this.value)"></select>
     <button id="btn-setup" class="header-setup-btn" onclick="openSetup()">⚙ 初期設定</button>
@@ -577,16 +583,26 @@
 
 </div>
 
-<!-- ライセンス有効化（未有効化時に表示・閉じられない） -->
+<!-- ライセンス有効化／お試し開始（未利用時に表示・閉じられない） -->
 <div class="modal-overlay" id="license-overlay">
   <div class="modal license-modal">
     <div class="modal-header">
-      <h2>🔑 ライセンスの有効化</h2>
+      <h2>🔑 ご利用の開始</h2>
     </div>
     <div>
-      <p class="setup-intro">
-        ご利用にはライセンスキーが必要です。ご購入時にお渡しした
-        <b>ライセンスキー</b>を貼り付けて「有効化」を押してください。
+      <!-- お試しブロック（trial_available時のみ表示） -->
+      <div id="license-trial-block" style="display:none">
+        <p class="setup-intro">
+          まずは <b id="trial-days-label">14</b> 日間、<b>無料でお試し</b>いただけます（キー入力は不要です）。
+        </p>
+        <button class="btn btn-primary" id="btn-trial" onclick="startTrial()" style="width:100%">
+          無料でお試しを始める
+        </button>
+        <div class="license-or">― または ―</div>
+      </div>
+      <!-- 購入キーブロック -->
+      <p class="setup-intro" id="license-key-intro">
+        ご購入済みの方は、お渡しした<b>ライセンスキー</b>を貼り付けて有効化してください。
       </p>
       <textarea id="license-key" rows="4" placeholder="ライセンスキーをここに貼り付け"
         style="width:100%;font-family:monospace;font-size:12px"></textarea>
@@ -1221,17 +1237,57 @@ async function verifyProvider(p, btn, msg) {
   }
 }
 
-// ───────────── ライセンス ─────────────
+// ───────────── ライセンス / お試し ─────────────
+function showTrialChip(data) {
+  const chip = document.getElementById('trial-chip');
+  if (data.mode === 'trial') {
+    chip.textContent = `お試し 残り${data.trial_days_left}日`;
+    chip.style.display = 'inline-block';
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
 async function initLicense() {
+  let data = null;
   try {
-    const data = await (await fetch('/api/license/status')).json();
+    data = await (await fetch('/api/license/status')).json();
+  } catch(e) { /* 取得失敗時も開始画面を出す */ }
+
+  if (data) {
+    if (data.trial_days) document.getElementById('trial-days-label').textContent = data.trial_days;
     if (data.licensed) {
       document.getElementById('license-overlay').classList.remove('show');
+      showTrialChip(data);
       return true;
     }
-  } catch(e) { /* 取得失敗時も有効化画面を出す */ }
+    // 未利用 or 期限切れ → 開始画面
+    document.getElementById('license-trial-block').style.display = data.trial_available ? 'block' : 'none';
+    const msg = document.getElementById('license-msg');
+    if (data.mode === 'trial_expired') {
+      msg.style.color = '#c0392b';
+      msg.textContent = 'お試し期間が終了しました。引き続きご利用にはライセンスキーが必要です。';
+    }
+  }
   document.getElementById('license-overlay').classList.add('show');
   return false;
+}
+
+async function startTrial() {
+  const btn = document.getElementById('btn-trial');
+  const msg = document.getElementById('license-msg');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>開始中...';
+  try {
+    const res = await fetch('/api/license/trial', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'お試しを開始できませんでした');
+    document.getElementById('license-overlay').classList.remove('show');
+    showTrialChip(data);
+    initSettings();
+  } catch(e) {
+    msg.style.color = '#c0392b'; msg.textContent = '❌ ' + e.message;
+    btn.disabled = false; btn.textContent = '無料でお試しを始める';
+  }
 }
 
 async function activateLicense() {

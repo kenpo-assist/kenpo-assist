@@ -1,10 +1,11 @@
 import os
+import json
 import shutil
 import sqlite3
 import subprocess
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -40,10 +41,12 @@ def data_dir() -> Path:
 
 DB_PATH = str(data_dir() / "kenpo_support.db")
 LICENSE_PATH = data_dir() / "license.key"
+TRIAL_PATH = data_dir() / "trial.json"
+TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "14"))
 
 
 def current_license() -> dict:
-    """有効化済みライセンスを読み、検証して payload を返す。無効/未有効化なら None。"""
+    """有効化済みの購入ライセンスを読み、検証して payload を返す。無効/未有効化なら None。"""
     if not LICENSE_PATH.exists():
         return None
     try:
@@ -52,10 +55,45 @@ def current_license() -> dict:
         return None
 
 
+def trial_state() -> dict:
+    """お試し状態を返す。未開始なら None。{started, expires, days_left, active}。"""
+    if not TRIAL_PATH.exists():
+        return None
+    try:
+        started = json.loads(TRIAL_PATH.read_text())["started"]
+        start = date.fromisoformat(started)
+    except Exception:
+        return None
+    end = start + timedelta(days=TRIAL_DAYS)
+    days_left = (end - date.today()).days
+    return {
+        "started": started,
+        "expires": end.isoformat(),
+        "days_left": max(days_left, 0),
+        "active": days_left >= 0,
+    }
+
+
+def licensing_state() -> dict:
+    """ライセンス/お試しを総合した利用可否状態。"""
+    lic = current_license()
+    if lic:
+        return {"mode": "licensed", "name": lic.get("name"), "expires": lic.get("expires")}
+    t = trial_state()
+    if t and t["active"]:
+        return {"mode": "trial", "trial_days_left": t["days_left"], "expires": t["expires"]}
+    if t and not t["active"]:
+        return {"mode": "trial_expired", "trial_days": TRIAL_DAYS}
+    return {"mode": "unlicensed", "trial_days": TRIAL_DAYS}
+
+
 def require_license():
-    """ライセンス必須エンドポイントのガード。"""
-    if current_license() is None:
-        raise HTTPException(status_code=403, detail="ライセンスが有効化されていません。製品ライセンスキーを入力してください。")
+    """ライセンス必須エンドポイントのガード（購入ライセンスまたは有効なお試しで許可）。"""
+    if licensing_state()["mode"] not in ("licensed", "trial"):
+        raise HTTPException(
+            status_code=403,
+            detail="ご利用にはライセンスの有効化、またはお試しの開始が必要です。",
+        )
 
 
 def init_db():
@@ -183,15 +221,28 @@ def index():
 
 @app.get("/api/license/status")
 def license_status():
-    lic = current_license()
-    if lic is None:
-        return {"licensed": False}
-    return {
-        "licensed": True,
-        "name": lic.get("name"),
-        "expires": lic.get("expires"),
-        "seats": lic.get("seats"),
-    }
+    """利用可否の総合状態を返す。
+    mode: licensed / trial / trial_expired / unlicensed。
+    trial_available: お試し未開始で開始可能か。"""
+    state = licensing_state()
+    state["licensed"] = state["mode"] in ("licensed", "trial")
+    state["trial_available"] = (current_license() is None) and (trial_state() is None)
+    return state
+
+
+@app.post("/api/license/trial")
+def license_trial():
+    """お試しを開始する（未購入・未開始のときのみ）。"""
+    if current_license() is not None:
+        return licensing_state()  # 既に購入済み
+    t = trial_state()
+    if t is not None:
+        # 既に開始済み（有効/期限切れ）。再開はさせない。
+        if t["active"]:
+            return licensing_state()
+        raise HTTPException(status_code=400, detail="お試し期間は既に終了しています。ご購入のライセンスキーを入力してください。")
+    TRIAL_PATH.write_text(json.dumps({"started": date.today().isoformat()}))
+    return licensing_state()
 
 
 @app.post("/api/license/activate")

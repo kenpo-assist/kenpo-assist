@@ -102,7 +102,37 @@
     gap: 16px;
     align-items: start;
   }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
   .col-sticky { position: sticky; top: 16px; }
+
+  /* 中央・右の表示切替はインライン display を使わずクラスで行う
+     （インライン display:block が下記の display:flex を上書きしてしまうため） */
+  .col-hidden { display: none !important; }
+
+  /* PC幅：中央（最終回答）・右（AIチャット）の列を、左列（問い合わせ＋草案）の
+     高さにJSで合わせる（syncColHeights）。列内の要素は flex で高さいっぱいに伸縮させる。 */
+  @media (min-width: 769px) {
+    #mid-col, #right-col { display: flex; flex-direction: column; }
+    #mid-content, #right-content { flex: 1; display: flex; flex-direction: column; }
+    #mid-content > .card, #right-content > .card {
+      flex: 1; display: flex; flex-direction: column; margin-bottom: 0;
+    }
+    #mid-placeholder, #right-placeholder {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    /* 最終回答テキストエリアをカード内で伸ばす */
+    #mid-content .form-row { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #mid-content #final-response { flex: 1; min-height: 0; resize: none; }
+    /* チャット欄をカード内で伸ばす */
+    #right-content .chat-box { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #right-content .chat-messages { flex: 1; height: auto; min-height: 0; }
+  }
 
   /* ── カード ── */
   .card {
@@ -285,6 +315,14 @@
     margin-bottom: 6px; display: block;
   }
 
+  /* タブレット幅（769〜1100px）：3列は窮屈なため、左列＋（中央・右を下段2列）に */
+  @media (min-width: 769px) and (max-width: 1100px) {
+    .three-col {
+      grid-template-columns: 1fr 1fr;
+    }
+    .three-col > .col-sticky { grid-column: 1 / -1; }
+  }
+
   /* ════════════════════════════════════════
      スマホ用スタイル（768px 以下）
      ════════════════════════════════════════ */
@@ -306,7 +344,8 @@
     .container { margin: 12px auto; padding: 0 12px; }
 
     /* 1カラム化 */
-    .two-col {
+    .two-col,
+    .three-col {
       grid-template-columns: 1fr;
       gap: 12px;
     }
@@ -456,9 +495,9 @@
   <!-- 新規問い合わせページ -->
   <div id="page-new">
     <div id="alert-area"></div>
-    <div class="two-col">
+    <div class="three-col">
 
-      <!-- 左カラム：入力 + 草案 -->
+      <!-- 左カラム：入力 + 草案 + 参考文献 -->
       <div class="col-sticky">
         <div class="card">
           <h2>問い合わせ内容</h2>
@@ -507,14 +546,14 @@
         </div>
       </div>
 
-      <!-- 右カラム：最終回答 + チャット -->
-      <div id="right-col">
-        <div id="right-placeholder" class="card-right-placeholder">
+      <!-- 中央カラム：最終回答 -->
+      <div id="mid-col">
+        <div id="mid-placeholder" class="card-right-placeholder">
           <svg width="40" height="40" fill="#c8ddf5" viewBox="0 0 24 24" style="margin-bottom:12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
           <p>草案を生成すると<br>この欄が表示されます</p>
         </div>
 
-        <div id="right-content" style="display:none">
+        <div id="mid-content" class="col-hidden">
           <div class="card">
             <h2>最終回答</h2>
             <div class="form-row">
@@ -525,7 +564,17 @@
               <button class="btn btn-secondary" onclick="saveDraft()" style="flex:1">対応中として保存</button>
             </div>
           </div>
+        </div>
+      </div>
 
+      <!-- 右カラム：AIへの確認・相談 -->
+      <div id="right-col">
+        <div id="right-placeholder" class="card-right-placeholder">
+          <svg width="40" height="40" fill="#c8ddf5" viewBox="0 0 24 24" style="margin-bottom:12px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <p>草案を生成すると<br>この欄が表示されます</p>
+        </div>
+
+        <div id="right-content" class="col-hidden">
           <div class="card">
             <h2>AIへの確認・相談</h2>
             <p class="chat-hint">不明点・解釈確認・修正依頼などをAIに質問できます</p>
@@ -794,8 +843,10 @@ async function generateDraft() {
     document.getElementById('ai-draft').value = data.ai_draft;
     document.getElementById('final-response').value = data.ai_draft;
     document.getElementById('draft-card').style.display = 'block';
-    document.getElementById('right-placeholder').style.display = 'none';
-    document.getElementById('right-content').style.display = 'block';
+    document.getElementById('mid-placeholder').classList.add('col-hidden');
+    document.getElementById('mid-content').classList.remove('col-hidden');
+    document.getElementById('right-placeholder').classList.add('col-hidden');
+    document.getElementById('right-content').classList.remove('col-hidden');
 
     const refsArea = document.getElementById('references-area');
     const refsBox = document.getElementById('ai-references');
@@ -814,6 +865,8 @@ async function generateDraft() {
     };
     document.getElementById('chat-messages').innerHTML =
       '<div style="color:#bbb;font-size:13px;text-align:center;margin:auto">質問を入力するとAIが回答します</div>';
+
+    syncColHeights();
 
     // スマホの場合、草案カードまでスクロール
     if (isMobile()) {
@@ -953,15 +1006,42 @@ function resetForm() {
   document.getElementById('category').value = '';
   document.getElementById('staff').value = '';
   document.getElementById('draft-card').style.display = 'none';
-  document.getElementById('right-placeholder').style.display = 'block';
-  document.getElementById('right-content').style.display = 'none';
+  document.getElementById('mid-placeholder').classList.remove('col-hidden');
+  document.getElementById('mid-content').classList.add('col-hidden');
+  document.getElementById('right-placeholder').classList.remove('col-hidden');
+  document.getElementById('right-content').classList.add('col-hidden');
   document.getElementById('chat-messages').innerHTML =
     '<div style="color:#bbb;font-size:13px;text-align:center;margin:auto">質問を入力するとAIが回答します</div>';
   currentId = null;
   chatHistory = [];
   currentInquiry = { content: '', category: '', ai_draft: '' };
+  syncColHeights();
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
+// 中央（最終回答）・右（AIチャット）の列を、左列（問い合わせ＋AI生成草案）の
+// 高さにぴったり合わせる。PC幅のみ。左列の高さ変化は ResizeObserver で追従。
+function syncColHeights() {
+  const left  = document.querySelector('#page-new .col-sticky');
+  const mid   = document.getElementById('mid-col');
+  const right = document.getElementById('right-col');
+  if (!left || !mid || !right) return;
+  if (window.matchMedia('(min-width: 769px)').matches) {
+    const h = left.offsetHeight;
+    mid.style.height = h + 'px';
+    right.style.height = h + 'px';
+  } else {
+    mid.style.height = '';
+    right.style.height = '';
+  }
+}
+(function initColHeightSync() {
+  const left = document.querySelector('#page-new .col-sticky');
+  if (!left) return;
+  if (window.ResizeObserver) new ResizeObserver(syncColHeights).observe(left);
+  window.addEventListener('resize', syncColHeights);
+  syncColHeights();
+})();
 
 async function loadList() {
   const keyword  = document.getElementById('search-keyword').value;

@@ -292,7 +292,8 @@ def _node_version() -> str:
     if not node:
         return None
     try:
-        r = subprocess.run([node, "-v"], capture_output=True, text=True, timeout=10)
+        r = subprocess.run([node, "-v"], capture_output=True,
+                           encoding="utf-8", errors="replace", timeout=10)
         return r.stdout.strip() or None
     except Exception:
         return None
@@ -336,12 +337,14 @@ def setup_install(data: SetupRequest):
             # Windowsのnpmはバッチ(.cmd)のためshell経由で実行
             result = subprocess.run(
                 f"npm install -g {package}",
-                shell=True, capture_output=True, text=True, timeout=600,
+                shell=True, capture_output=True,
+                encoding="utf-8", errors="replace", timeout=600,
             )
         else:
             result = subprocess.run(
                 [shutil.which("npm"), "install", "-g", package],
-                capture_output=True, text=True, timeout=600,
+                capture_output=True,
+                encoding="utf-8", errors="replace", timeout=600,
             )
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=500, detail="インストールがタイムアウトしました。通信環境をご確認のうえ再度お試しください。")
@@ -511,7 +514,8 @@ def call_ai(prompt: str, provider: str = None, timeout: int = None) -> str:
             cmd = ["cmd", "/c"] + cmd
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True,
+            cmd, capture_output=True,
+            encoding="utf-8", errors="replace",
             timeout=timeout or AI_TIMEOUT, cwd=AI_CWD,
         )
     except FileNotFoundError:

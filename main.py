@@ -502,6 +502,13 @@ def call_ai(prompt: str, provider: str = None, timeout: int = None) -> str:
     provider = resolve_provider(provider)
     conf = PROVIDERS[provider]
     cmd = conf["build_cmd"](prompt)
+    if IS_WINDOWS:
+        # npm global installs create .cmd wrappers, not .exe files.
+        # subprocess with shell=False uses CreateProcess which only finds .exe,
+        # so resolve the full path and invoke via cmd /c when needed.
+        exe = shutil.which(cmd[0])
+        if exe and exe.lower().endswith((".cmd", ".bat")):
+            cmd = ["cmd", "/c"] + cmd
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True,
